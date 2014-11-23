@@ -1,7 +1,10 @@
 package oauth
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 )
 
 type GithubOAuth struct {

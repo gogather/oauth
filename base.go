@@ -1,5 +1,5 @@
 package oauth
 
-type GithubOAuth struct {
+type BaseOAuth struct {
 	AccessToken string
 }
