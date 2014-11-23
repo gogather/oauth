@@ -2,6 +2,7 @@ package oauth
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -25,18 +26,26 @@ func (this *GithubOAuth) newGithubOAuth(ClientId string, ClientSecret string, Co
 func (this *GithubOAuth) GetData(ClientId string, ClientSecret string, Code string) (interface{}, error) {
 	err := this.newGithubOAuth(ClientId, ClientSecret, Code)
 	if err != nil {
-		fmt.Println("oauth error: ", err)
+		fmt.Println("[oauth error]: ", err)
 		return nil, err
 	}
 
 	url := "https://api.github.com/user?" + this.parms
 
-	json, err := this.get(url)
+	jsonStr, err := this.get(url)
 	if nil != err {
 		fmt.Println("Request Failed: " + url)
 		return nil, err
 	}
-	return this.jsonDecode(json)
+
+	json, err := this.jsonDecode(jsonStr)
+	if check, ok := json.(map[string]interface{}); ok {
+		if nil != check["message"] {
+			fmt.Println("[msg] ", check["message"])
+			return nil, errors.New(check["message"].(string))
+		}
+	}
+	return json, err
 }
 
 // 获取token等参数
@@ -52,12 +61,22 @@ func (this *GithubOAuth) jsonDecode(data string) (interface{}, error) {
 	var dat interface{}
 
 	err := json.Unmarshal(dataByte, &dat)
-	return dat, err
+	if nil != err {
+		return nil, err
+	}
+	return dat, nil
 }
 
 func (this *GithubOAuth) get(url string) (string, error) {
-	response, _ := http.Get(url)
-	defer response.Body.Close()
+	response, err := http.Get(url)
+	if nil != err {
+		response.Body.Close()
+		return "", err
+	}
 	body, err := ioutil.ReadAll(response.Body)
-	return string(body), err
+	if nil != err {
+		response.Body.Close()
+		return "", err
+	}
+	return string(body), nil
 }
