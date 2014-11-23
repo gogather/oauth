@@ -2,7 +2,7 @@
 
 ### github
 
-```golang
+```go
 package controllers
 
 import (
