@@ -12,17 +12,25 @@ type GithubOAuth struct {
 	parms string
 }
 
-func (this *GithubOAuth) NewGithubOAuth(ClientId string, ClientSecret string, Code string) error {
+func (this *GithubOAuth) newGithubOAuth(ClientId string, ClientSecret string, Code string) error {
 	var err error
 	this.ClientId = ClientId
 	this.ClientSecret = ClientSecret
 	this.Code = Code
 	this.parms, err = this.getParms()
+
 	return err
 }
 
-func (this *GithubOAuth) GetData() (interface{}, error) {
-	url := "https://api.github.com/user?access_token=" + this.parms
+func (this *GithubOAuth) GetData(ClientId string, ClientSecret string, Code string) (interface{}, error) {
+	err := this.newGithubOAuth(ClientId, ClientSecret, Code)
+	if err != nil {
+		fmt.Println("oauth error: ", err)
+		return nil, err
+	}
+
+	url := "https://api.github.com/user?" + this.parms
+
 	json, err := this.get(url)
 	if nil != err {
 		fmt.Println("Request Failed: " + url)
@@ -31,8 +39,10 @@ func (this *GithubOAuth) GetData() (interface{}, error) {
 	return this.jsonDecode(json)
 }
 
+// 获取token等参数
 func (this *GithubOAuth) getParms() (string, error) {
 	url := `https://github.com/login/oauth/access_token?client_id=` + this.ClientId + `&client_secret=` + this.ClientSecret + `&code=` + this.Code
+
 	return this.get(url)
 }
 
