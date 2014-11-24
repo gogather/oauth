@@ -14,6 +14,8 @@ func Test_GithubOAuth(t *testing.T) {
 
 func Test_YangtzeuAuth(t *testing.T) {
 	ya := &YangtzeuAuth{}
-	rst, _ := ya.GetData("201103233", "********")
-	t.Log(rst)
+	rst, err := ya.GetData("xxxxxxxxx", "xxxxxxxx")
+	if err != nil {
+		t.Log(rst)
+	}
 }

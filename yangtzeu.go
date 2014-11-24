@@ -1,29 +1,34 @@
 package oauth
 
 import (
-	"code.google.com/p/mahonia"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"net/url"
 	"regexp"
+	"strings"
 )
 
 type YangtzeuAuth struct {
 	BaseOAuth
-	studentNum      string
-	password        string
-	viewstate       string
-	eventvalidation string
+	studentNum string
+	password   string
 }
 
+// 获取预参数
 func (this *YangtzeuAuth) getParms(content string) (string, string) {
 	regexp1 := `([\d\D]+id="__VIEWSTATE" value=")([\d\D][^"]+)("[\d\D]+id="__EVENTVALIDATION" value=")([\d\D][^"]+)("[\d\D]+)`
 	reg := regexp.MustCompile(regexp1)
 	viewstate := reg.ReplaceAllString(content, "$2")
 	eventvalidation := reg.ReplaceAllString(content, "$4")
+
 	return viewstate, eventvalidation
 }
 
+// 获取数据，入口函数
+// studentNumber 学号
+// password 密码
 func (this *YangtzeuAuth) GetData(studentNumber string, password string) (interface{}, error) {
 	reqUrl := "http://jwc.yangtzeu.edu.cn:8080/login.aspx"
 
@@ -35,36 +40,51 @@ func (this *YangtzeuAuth) GetData(studentNumber string, password string) (interf
 		fmt.Println("Get Request Error: ", reqUrl)
 		return nil, err
 	} else {
-		this.viewstate, this.eventvalidation = this.getParms(content)
-		if len(this.viewstate) > 0 && len(this.eventvalidation) > 0 {
-			fmt.Println(this.viewstate)
-			fmt.Println(this.eventvalidation)
+		viewstate, eventvalidation := this.getParms(content)
+		if len(viewstate) > 0 && len(eventvalidation) > 0 {
 
-			// post request for login
-			result, err := this.post(
-				reqUrl,
-				url.Values{
-					"__VIEWSTATE":       {this.viewstate},
-					"__EVENTVALIDATION": {this.eventvalidation},
-					"txtUid":            {this.studentNum},
-					"txtPwd":            {this.password},
-					"selKind":           {"1"},
-				},
+			resp, err := http.Post(reqUrl,
+				"application/x-www-form-urlencoded",
+				strings.NewReader(fmt.Sprintf(
+					"__VIEWSTATE=%s&__EVENTVALIDATION=%s&txtUid=%s&txtPwd=%s&selKind=1&selKind=1&btLogin=%B5%C7%C2%BD",
+					url.QueryEscape(viewstate),
+					url.QueryEscape(eventvalidation),
+					studentNumber,
+					password,
+				)),
 			)
+			if err != nil {
+				fmt.Println(err)
+			}
 
-			// cd, err := iconv.Open("gbk", "utf-8")
-			// if err != nil {
-			// 	fmt.Println("iconv.Open failed!")
-			// 	return
-			// }
-			// defer cd.Close()
-			// result := cd.ConvString(result)
+			defer resp.Body.Close()
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				fmt.Println(err)
+			}
 
-			fmt.Println(result)
-			return result, err
+			result := string(body)
+			name, class := this.parseStuInfo(result)
+
+			return map[string]interface{}{
+				"name":  name,
+				"class": class,
+			}, err
+
 		} else {
 			fmt.Println("Invalid Parms")
 			return nil, errors.New("Invalid Parms")
 		}
 	}
+}
+
+// 提取学生信息
+func (this *YangtzeuAuth) parseStuInfo(body string) (string, string) {
+	regexp1 := `([\d\D]+FlowLayout">)([\d]+)( <br> )([\d\D][^<]+)(<br> )([\d\D][^<]+)(</DIV><BR>[\d\D]+)`
+	reg := regexp.MustCompile(regexp1)
+
+	name := reg.ReplaceAllString(body, "$4")
+	class := reg.ReplaceAllString(body, "$6")
+
+	return name, class
 }

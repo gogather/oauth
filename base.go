@@ -1,11 +1,9 @@
 package oauth
 
 import (
-	// "fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	// "strings"
 )
 
 type BaseOAuth struct {
