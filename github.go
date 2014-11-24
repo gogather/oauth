@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 )
 
 type GithubOAuth struct {
@@ -65,18 +63,4 @@ func (this *GithubOAuth) jsonDecode(data string) (interface{}, error) {
 		return nil, err
 	}
 	return dat, nil
-}
-
-func (this *GithubOAuth) get(url string) (string, error) {
-	response, err := http.Get(url)
-	if nil != err {
-		response.Body.Close()
-		return "", err
-	}
-	body, err := ioutil.ReadAll(response.Body)
-	if nil != err {
-		response.Body.Close()
-		return "", err
-	}
-	return string(body), nil
 }
