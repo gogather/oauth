@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 )
 
 type GithubOAuth struct {
@@ -21,11 +22,11 @@ func (this *GithubOAuth) newGithubOAuth(ClientId string, ClientSecret string, Co
 	return err
 }
 
-func (this *GithubOAuth) GetData(ClientId string, ClientSecret string, Code string) (interface{}, error) {
+func (this *GithubOAuth) GetData(ClientId string, ClientSecret string, Code string) (string, interface{}, error) {
 	err := this.newGithubOAuth(ClientId, ClientSecret, Code)
 	if err != nil {
 		fmt.Println("[oauth error]: ", err)
-		return nil, err
+		return "", nil, err
 	}
 
 	url := "https://api.github.com/user?" + this.parms
@@ -33,17 +34,22 @@ func (this *GithubOAuth) GetData(ClientId string, ClientSecret string, Code stri
 	jsonStr, err := this.get(url)
 	if nil != err {
 		fmt.Println("Request Failed: " + url)
-		return nil, err
+		return "", nil, err
 	}
 
 	json, err := this.jsonDecode(jsonStr)
 	if check, ok := json.(map[string]interface{}); ok {
 		if nil != check["message"] {
 			fmt.Println("[msg] ", check["message"])
-			return nil, errors.New(check["message"].(string))
+			return "", nil, errors.New(check["message"].(string))
 		}
 	}
-	return json, err
+
+	//get access token
+	array1 := strings.Split(this.parms, "&")
+	array2 := strings.Split(array1[0], "=")
+	token_string := array2[1]
+	return token_string, json, err
 }
 
 // 获取token等参数
