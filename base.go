@@ -16,7 +16,6 @@ type BaseOAuth struct {
 func (this *BaseOAuth) get(reqUrl string) (string, error) {
 	response, err := http.Get(reqUrl)
 	if nil != err {
-		response.Body.Close()
 		return "", err
 	}
 	body, err := ioutil.ReadAll(response.Body)
