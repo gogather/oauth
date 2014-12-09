@@ -3,6 +3,7 @@ package oauth
 import (
 	"errors"
 	"fmt"
+	"github.com/guotie/gogb2312"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -64,7 +65,13 @@ func (this *YangtzeuAuth) GetData(studentNumber string, password string) (interf
 			}
 
 			result := string(body)
-			name, class := this.parseStuInfo(result)
+
+			resultUtf8, err, _, _ := gogb2312.ConvertGB2312String(result)
+			if err != nil {
+				return nil, errors.New("gb2312 convert into utf8 error.")
+			}
+
+			name, class := this.parseStuInfo(resultUtf8)
 
 			return map[string]interface{}{
 				"name":  name,
