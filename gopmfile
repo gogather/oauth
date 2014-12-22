@@ -1,0 +1,5 @@
+[target]
+path = github.com/gogather/auth
+
+[deps]
+github.com/guotie/gogb2312 = branch:master
